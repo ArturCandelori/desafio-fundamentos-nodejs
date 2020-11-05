@@ -1,7 +1,7 @@
 import TransactionsRepository from '../repositories/TransactionsRepository';
 import Transaction from '../models/Transaction';
 
-interface CreateTransaction {
+interface Request {
   title: string;
   value: number;
   type: 'income' | 'outcome';
@@ -14,11 +14,15 @@ class CreateTransactionService {
     this.transactionsRepository = transactionsRepository;
   }
 
-  public execute({ title, value, type }: CreateTransaction): Transaction {
-    const balance = this.transactionsRepository.getBalance();
+  public execute({ title, value, type }: Request): Transaction {
+    if (!['income', 'outcome'].includes(type)) {
+      throw new Error('Invalid transaction type');
+    }
 
-    if (type === 'outcome' && value > balance.total) {
-      throw new Error('Transaction denied: not enough funds');
+    const { total } = this.transactionsRepository.getBalance();
+
+    if (type === 'outcome' && value > total) {
+      throw new Error('Transaction denied: insufficient funds');
     }
 
     return this.transactionsRepository.create({ title, value, type });
